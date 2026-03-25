@@ -1,0 +1,19 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    date (3.5.1)
+    sqlite3 (2.9.2-x86_64-linux-gnu)
+
+PLATFORMS
+  x86_64-linux
+
+DEPENDENCIES
+  date (~> 3.5)
+  sqlite3 (~> 2.9)
+
+CHECKSUMS
+  date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
+  sqlite3 (2.9.2-x86_64-linux-gnu) sha256=dce83ffcb7e72f9f7aeb6e5404f15d277a45332fe18ccce8a8b3ed51e8d23aee
+
+BUNDLED WITH
+  4.0.8
