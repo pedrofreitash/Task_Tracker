@@ -3,7 +3,7 @@ require_relative "../Controller/taskController"
 
 command = ARGV[0]
 param = ARGV[1]
-update_descripiton = ARGV[2]
+# update_column = ARGV[2]
 
 controller = TaskController.new
 
@@ -23,20 +23,34 @@ when 'add'
   puts "Adicionado task - ID: #{task.id}"
 
 when 'list'
-  tasks = nil
-  if param
-    tasks = controller.show(param)
+  task = param ? controller.show(param) : controller.index
+  if param.nil?
+    task = controller.index
+  elsif param.to_i.to_s == param
+    task = controller.show(param)
   else
-    tasks = controller.index
+    task = controller.search_by_status(param)
   end
-  show_task(tasks)
+  if task
+    show_task(task)
+  else
+    puts "Task não encontrada!"
+  end
+
+when ''
 
 when 'delete'
   controller.destroy(param)
   puts "Deletar task #{param}"
 
 when 'update'
-  controller.update(param, update_descripiton)
+  controller.update(param, ARGV[2])
+
+when 'mark-in-progress'
+  controller.mark_in_progress(param)
+
+when 'mark-done'
+  controller.mark_done(param)
 else
   puts "Invalido"
 end

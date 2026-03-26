@@ -5,22 +5,34 @@ require 'date'
 class Task
   attr_accessor :id, :description, :status, :created_at, :updated_at
 
-  def initialize(description)
+  def initialize(id: nil, description:, status: nil, created_at: nil, updated_at: nil)
+    @id = id
     @description = description
-    @status = StatusTask::STATUS_TASK[0]
-    @created_at = (Date.today).to_s
+    @status = status || StatusTask::STATUS_TASK[:todo]
+    @created_at = created_at || (Date.today).to_s
+    @updated_at = updated_at
+
+    @original_attributes = {
+      description: @description,
+      status: @status,
+      updated_at: @updated_at
+    }
   end
 
   def insert
-    query = 'INSERT INTO tasks (description, status, created_at) VALUES (?, ?, ?)'
+    query = 'INSERT INTO tasks (description, status, created_at, updated_at) VALUES (?, ?, ?, ?)'
   
     db = open_db
     begin
-      db.execute(query,  [@description, @status, @created_at])
+      db.execute(query,  [@description, @status, @created_at, @updated_at])
       @id = db.last_insert_row_id
     ensure
       db.close if db
     end
+    @original_attributes[:description] = @description
+    @original_attributes[:status] = @status
+    @original_attributes[:updated_atp] = @updated_at
+
     self
   end
 
@@ -30,12 +42,7 @@ class Task
     db = open_db
     begin
       db.execute(query) do |row|
-        task = Task.new(row[1])
-        task.id=row[0]
-        task.status=row[2]
-        task.created_at=row[3]
-        task.updated_at=row[4]
-
+        task = Task.new(id: row[0], description: row[1], status: row[2], created_at: row[3], updated_at: [4])
         result << task
       end
 
@@ -53,11 +60,7 @@ class Task
     begin
       row = db.get_first_row(query, id)
       if row
-        task = Task.new(row[1])
-        task.id=row[0]
-        task.status=row[2]
-        task.created_at=row[3]
-        task.updated_at=row[4]
+        task = Task.new(id: row[0], description: row[1], status: row[2], created_at: row[3], updated_at: [4])
       end
     ensure 
       db.close if db
@@ -65,18 +68,25 @@ class Task
     task
   end
 
-  def self.where(status)
+  def self.where(filters)
+    
+    conditions = []
+    values = []
+    
     result = []
-    query = 'SELECT id, description, status, created_at, updated_at FROM tasks WHERE status = ?'
+
+    filters.each do |filter, value|
+      conditions << "#{filter} = ?"
+      values << value
+    end
+
+
+    query = "SELECT id, description, status, created_at, updated_at FROM tasks WHERE #{conditions.join(' AND')}"
     db = open_db
 
     begin
-      db.execute(query, status) do |row|
-        task = Task.new(row[1])
-        task.id=row[0]
-        task.status=row[2]
-        task.created_at=row[3]
-        task.updated_at=row[4]
+      db.execute(query, values) do |row|
+        task = Task.new(id: row[0], description: row[1], status: row[2], created_at: row[3], updated_at: [4])
 
         result << task
       end
@@ -87,15 +97,40 @@ class Task
   end
 
   def update
+    updates = []
+    values = []
+
+    fields = [:description, :status]
+
+    fields.each do |field|
+      current_value = instance_variable_get("@#{field}")
+      original_attributes = @original_attributes[field]
+
+      if current_value != original_attributes
+        updates << "#{field} = ?"
+        values << current_value
+      end
+    end
+
+    return self if updates.empty?
+    
     @updated_at = (Date.today).to_s
-    query = 'UPDATE tasks SET description = ?, status = ?, updated_at = ? WHERE id = ?'
+    updates << "updated_at = ?"
+    values << @updated_at
+
+    query = "UPDATE tasks SET #{updates.join(', ')} WHERE id = ?"
+    values << @id
 
     db = open_db
     begin
-      db.execute(query, [@description, @status, @updated_at, @id])
+      db.execute(query, values)
     ensure
       db.close if db
     end
+    @original_attributes[:description] = @description
+    @original_attributes[:status] = @status
+    @original_attributes[:updated_atp] = @updated_at
+
     self
   end
 
