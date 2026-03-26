@@ -1,0 +1,2 @@
+#!/bin/bash
+ruby ~/DevRuby/projetos/task_tracker/taskTracker.rb "$@"
